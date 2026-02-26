@@ -153,10 +153,11 @@ EOSQL
 |-----|------|---------|-------------|
 | clickhouse.antiAffinity | bool | `false` |  |
 | clickhouse.antiAffinityScope | string | ClickHouseInstallation | Scope for anti-affinity policy when antiAffinity is enabled. Determines the level at which pod distribution is enforced. Available scopes:   - ClickHouseInstallation: Pods from the same installation won't run on the same node (default)   - Shard: Pods from the same shard won't run on the same node   - Replica: Pods from the same replica won't run on the same node   - Cluster: Pods from the same cluster won't run on the same node   - Namespace: Pods from the same namespace won't run on the same node |
-| clickhouse.clusterSecret | object | `{"auto":true,"enabled":false,"secure":false,"value":"","valueFrom":{"secretKeyRef":{"key":"secret","name":""}}}` | Cluster secret configuration for secure inter-node communication |
+| clickhouse.clusterSecret | object | `{"auto":true,"enabled":false,"secure":false,"disableInsecure":false,"value":"","valueFrom":{"secretKeyRef":{"key":"secret","name":""}}}` | Cluster secret configuration for secure inter-node communication |
 | clickhouse.clusterSecret.auto | bool | `true` | Auto-generate cluster secret (recommended for security) |
 | clickhouse.clusterSecret.enabled | bool | `false` | Whether to enable secret-based cluster communication |
 | clickhouse.clusterSecret.secure | bool | `false` | Whether to secure this behind the SSL port |
+| clickhouse.clusterSecret.disableInsecure | bool | `false` | Disable insecure ports for the cluster via `insecure: "no"` in the CHI spec. If set, then `clusterSecret.secure` or else the template will error. Before disabling, you MUST ensure your Operator is using HTTPS to interact with the installation ([see here](https://github.com/Altinity/clickhouse-operator/blob/release-0.25.6/docs/security_hardening.md#forcing-https-for-operator-connections) for more details).  |
 | clickhouse.clusterSecret.value | string | `""` | Plaintext cluster secret value (not recommended for production) |
 | clickhouse.clusterSecret.valueFrom | object | `{"secretKeyRef":{"key":"secret","name":""}}` | Reference to an existing Kubernetes secret containing the cluster secret |
 | clickhouse.clusterSecret.valueFrom.secretKeyRef.key | string | `"secret"` | Key in the secret that contains the cluster secret value |

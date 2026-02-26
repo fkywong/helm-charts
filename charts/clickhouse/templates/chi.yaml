@@ -3,6 +3,7 @@
 {{- range .Values.clickhouse.extraPorts }}
 {{- $extraPortNames = append $extraPortNames .name }}
 {{- end }}
+{{- $disableInsecure := and .Values.clickhouse.clusterSecret .Values.clickhouse.clusterSecret.disableInsecure -}}
 {{- $serviceHttpsPort := (((.Values.clickhouse).settings).https_port) | default "" -}}
 {{- $serviceSecureTcpPort := (((.Values.clickhouse).settings).tcp_port_secure) | default "" -}}
 ---
@@ -55,12 +56,14 @@ spec:
         spec:
           type: {{ .Values.clickhouse.service.type }}
           ports:
+            {{- if not $disableInsecure }}
             - name: http
               port: 8123
               targetPort: 8123
             - name: tcp
               port: 9000
               targetPort: 9000
+            {{- end }}
             {{- if .Values.clickhouse.extraPorts }}
             {{- range .Values.clickhouse.extraPorts }}
             - name: {{ .name }}
@@ -99,12 +102,14 @@ spec:
             {{- toYaml .Values.clickhouse.lbService.loadBalancerSourceRanges | nindent 12 }}
           {{- end }}
           ports:
+            {{- if not $disableInsecure }}
             - name: http
               port: 8123
               targetPort: 8123
             - name: tcp
               port: 9000
               targetPort: 9000
+            {{- end }}
             {{- if .Values.clickhouse.extraPorts }}
             {{- range .Values.clickhouse.extraPorts }}
             - name: {{ .name }}
@@ -225,6 +230,9 @@ spec:
         {{- if .Values.clickhouse.clusterSecret.enabled }}
         {{- if .Values.clickhouse.clusterSecret.secure }}
         secure: "yes"
+        {{- end }}
+        {{- if $disableInsecure }}
+        insecure: "no"
         {{- end }}
         secret:
           {{- if .Values.clickhouse.clusterSecret.auto }}

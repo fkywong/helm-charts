@@ -80,6 +80,8 @@ clickhouse:
     enabled: false
     # -- Whether to secure this behind the SSL port
     secure: false
+    # -- Disable insecure ports
+    disableInsecure: false
     # -- Auto-generate cluster secret (recommended for security)
     auto: true
     # -- Plaintext cluster secret value (not recommended for production)
