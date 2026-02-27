@@ -39,13 +39,14 @@ def wait_until(check_fn, timeout=60, interval=5, timeout_msg="Operation timed ou
 @TestStep(When)
 def get_version(self, namespace, pod_name, user="default", password=""):
     """Get ClickHouse version from the specified pod."""
+    secure_flag = "--secure --accept-invalid-certificate" if get_chi_secure_flag(namespace=namespace) else ""
     auth_args = f"-u {user}" if user else ""
     if password:
         auth_args += f" --password {password}"
 
     version = run(
         cmd=f"kubectl exec -n {namespace} {pod_name} "
-        f"-- clickhouse-client {auth_args} -q 'SELECT version()'"
+        f"-- clickhouse-client {secure_flag} {auth_args} -q 'SELECT version()'"
     )
     return version.stdout.strip()
 
@@ -55,6 +56,7 @@ def execute_clickhouse_query(
     self, namespace, pod_name, query, user="default", password="", check=True
 ):
     """Execute a ClickHouse query on a specific pod."""
+    secure_flag = "--secure --accept-invalid-certificate" if get_chi_secure_flag(namespace=namespace) else ""
     auth_args = f"-u {user}" if user else ""
     if password:
         auth_args += f" --password {password}"
@@ -63,7 +65,7 @@ def execute_clickhouse_query(
 
     result = run(
         cmd=f"kubectl exec -n {namespace} {pod_name} "
-        f"-- clickhouse-client {auth_args} -q '{escaped_query}'",
+        f"-- clickhouse-client {secure_flag} {auth_args} -q '{escaped_query}'",
         check=check,
     )
     return result
@@ -73,9 +75,10 @@ def execute_clickhouse_query(
 def test_clickhouse_connection(self, namespace, pod_name, user, password):
     """Test ClickHouse connection with given credentials."""
     try:
+        secure_flag = "--secure --accept-invalid-certificate" if get_chi_secure_flag(namespace=namespace) else ""
         result = run(
             cmd=f"kubectl exec -n {namespace} {pod_name} "
-            f"-- clickhouse-client -u {user} --password {password} "
+            f"-- clickhouse-client {secure_flag} -u {user} --password {password} "
             f"-q 'SELECT 1'",
             check=False,
         )
@@ -104,6 +107,19 @@ def get_chi_info(self, namespace):
     if chi_info["items"]:
         return chi_info["items"][0]
     return None
+
+
+_secure_flag_cache = {}
+
+@TestStep(When)
+def get_chi_secure_flag(self, namespace):
+    """Check if the CHI cluster has secure: 'yes' enabled. Result is cached per namespace."""
+    if namespace not in _secure_flag_cache:
+        try:
+            _secure_flag_cache[namespace] = get_chi_info(namespace=namespace)["spec"]["configuration"]["clusters"][0]["secure"] == "yes"
+        except (TypeError, KeyError, IndexError):
+            _secure_flag_cache[namespace] = False
+    return _secure_flag_cache[namespace]
 
 
 @TestStep(When)

@@ -23,6 +23,13 @@ clickhouse:
   
   settings:
     https_port: 8444
+    tcp_port_secure: 9440
+
+  clusterSecret:
+    enabled: true
+    secure: true
+    disableInsecure: true
+    auto: true
 
   configurationFiles:
     # To regenerate the public certificate:
@@ -80,7 +87,7 @@ clickhouse:
             <certificateFile>/etc/clickhouse-server/config.d/foo.crt</certificateFile>
             <privateKeyFile>/etc/clickhouse-server/secrets.d/bar.key/clickhouse-certs/server.key</privateKeyFile>
             <dhParamsFile>/etc/clickhouse-server/secrets.d/dhparam.pem/clickhouse-certs/dhparam.pem</dhParamsFile>
-            <verificationMode>relaxed</verificationMode>
+            <verificationMode>none</verificationMode>
             <loadDefaultCAFile>true</loadDefaultCAFile>
             <cacheSessions>true</cacheSessions>
             <disableProtocols>sslv2,sslv3</disableProtocols>
