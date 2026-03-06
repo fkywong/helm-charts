@@ -100,6 +100,15 @@ def check_deployment(self, fixture_file, skip_external_keeper=True):
             tls.verify_settings_ports_in_chi(
                 namespace=namespace,
                 expected_https_port=https_port,
+                expected_tcp_port_secure=9440,
+            )
+
+            tls.verify_insecure_disabled_in_chi(
+                namespace=namespace,
+            )
+
+            tls.verify_service_ports_secure_only(
+                namespace=namespace,
             )
 
         with And("verify HTTPS endpoint certificate"):

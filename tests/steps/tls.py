@@ -52,16 +52,18 @@ def verify_tls_secret_references_in_chi(self, namespace):
 
 
 @TestStep(Then)
-def verify_settings_ports_in_chi(self, namespace, expected_https_port):
+def verify_settings_ports_in_chi(self, namespace, expected_https_port, expected_tcp_port_secure):
     """Verify settings block has correct port configuration in CHI spec."""
     chi_data = clickhouse.get_chi_info(namespace=namespace)
 
     settings = chi_data.get("spec", {}).get("configuration", {}).get("settings", {})
     assert settings.get("https_port") == expected_https_port, \
         f"Expected https_port: {expected_https_port}, got: {settings.get('https_port')!r}"
-    assert "tcp_port_secure" not in settings, \
-        f"Did not expect 'tcp_port_secure' in settings, but found: {settings.get('tcp_port_secure')!r}"
-    note(f"✓ Settings block only has https_port as explicitly set: {expected_https_port}")
+    note(f"✓ https_port: {expected_https_port}")
+
+    assert settings.get("tcp_port_secure") == expected_tcp_port_secure, \
+        f"Expected tcp_port_secure: {expected_tcp_port_secure}, got: {settings.get('tcp_port_secure')!r}"
+    note(f"✓ tcp_port_secure: {expected_tcp_port_secure}")
 
 
 @TestStep(Then)
@@ -123,6 +125,44 @@ def verify_tls_files_on_pod(self, namespace):
     assert dh_params.parameter_numbers().g == 2, \
         f"Expected DH params generator g=2, got g={dh_params.parameter_numbers().g}"
     note("✓ DH params valid (g=2)")
+
+
+@TestStep(Then)
+def verify_insecure_disabled_in_chi(self, namespace):
+    """Verify insecure: 'no' and secure: 'yes' are set on the cluster in CHI spec."""
+    chi_data = clickhouse.get_chi_info(namespace=namespace)
+
+    clusters = chi_data.get("spec", {}).get("configuration", {}).get("clusters", [])
+    assert len(clusters) > 0, "No clusters found in CHI spec"
+
+    cluster = clusters[0]
+    assert cluster.get("secure") == "yes", \
+        f"Expected secure: 'yes', got: {cluster.get('secure')!r}"
+    assert cluster.get("insecure") == "no", \
+        f"Expected insecure: 'no', got: {cluster.get('insecure')!r}"
+
+    note("✓ Cluster has secure: 'yes' and insecure: 'no'")
+
+
+@TestStep(Then)
+def verify_service_ports_secure_only(self, namespace):
+    """Verify service templates only expose secure ports (no 8123/9000)."""
+    chi_data = clickhouse.get_chi_info(namespace=namespace)
+
+    service_templates = chi_data.get("spec", {}).get("templates", {}).get("serviceTemplates", [])
+    assert len(service_templates) > 0, "No service templates found in CHI spec"
+
+    for svc in service_templates:
+        svc_name = svc.get("name", "unknown")
+        ports = svc.get("spec", {}).get("ports", [])
+        port_numbers = [p.get("port") for p in ports]
+
+        assert 8123 not in port_numbers, \
+            f"Service '{svc_name}' still has insecure HTTP port 8123"
+        assert 9000 not in port_numbers, \
+            f"Service '{svc_name}' still has insecure TCP port 9000"
+
+        note(f"✓ Service '{svc_name}' has only secure ports: {port_numbers}")
 
 
 @TestStep(Then)

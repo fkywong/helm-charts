@@ -247,6 +247,15 @@ Extra Users
   {{- end -}}
 {{- end -}}
 {{/*
+Cluster Secret Configuration
+*/}}
+{{- define "validate.clickhouse.clusterSecretDisableInsecure" -}}
+  {{- if and .Values.clickhouse.clusterSecret.disableInsecure (not .Values.clickhouse.clusterSecret.secure) }}
+    {{- fail "clusterSecret.disableInsecure requires `clusterSecret.secure: true`." }}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 Common labels
 */}}
 {{- define "clickhouse.labels" -}}
